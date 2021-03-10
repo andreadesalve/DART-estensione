@@ -1,0 +1,30 @@
+#!/bin/bash
+
+echo "Running test.."
+
+for n_eligibles in 3 6 10 16 20
+do
+	echo "N_eligibles $n_eligibles"
+	for n_universities in $(seq 1 $n_eligibles)
+	do
+		echo "N_universities $n_universities"
+		echo "N_eligibles $n_eligibles" >> testEligibles${n_eligibles}universities${n_universities}.txt
+		echo "N_universities $n_universities" >> testEligibles${n_eligibles}universities${n_universities}.txt
+		echo "Create blockchain " >> testEligibles${n_eligibles}universities${n_universities}.txt
+		n_accounts=$((n_universities + n_eligibles + 3))
+		echo "Numero accounts: $n_accounts"
+		echo "Numero accounts: $n_accounts" >> testEligibles${n_eligibles}universities${n_universities}.txt
+		ganache-cli --accounts $n_accounts --port 8545 --gasLimit 0xb71b00 --networkId 5777 &
+		ganache_cli_PID=$!
+		echo "Create blockchain with pid $ganache_cli_PID" >> testEligibles${n_eligibles}universities${n_universities}.txt
+		sleep 10
+		truffle migrate --network ganache >> testEligibles${n_eligibles}universities${n_universities}.txt
+		sleep 10
+		python3 test_RS.py --build build/contracts/DART.json --netid 5777 $n_eligibles $n_universities >> testEligibles${n_eligibles}universities${n_universities}.txt
+		sleep 5		
+		echo "kill $ganache_cli_PID" >> testEligibles${n_eligibles}universities${n_universities}.txt
+		kill $ganache_cli_PID >> testEligibles${n_eligibles}universities${n_universities}.txt
+	done
+done
+
+exit 0

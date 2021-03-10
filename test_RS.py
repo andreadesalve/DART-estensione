@@ -1,6 +1,8 @@
 import argparse
 from DART import *
 from pprint import pprint
+import csv
+import os
 
 # ----------------------------------------------------- 
 
@@ -105,6 +107,8 @@ d.newRole(RN['buyer'], {'from': PR['RecSys']})
 d.newRole(RN['university'], {'from': PR['RecSys']})
 d.newRole(RN['professor'], {'from': PR['RecSys']})
 d.newRole(RN['university'], {'from': PR['StateA']})
+
+
 print(addressesOfUniversities)
 for uniAddr in addressesOfUniversities:
     d.newRole(RN['professor'], {'from': uniAddr})
@@ -127,7 +131,6 @@ d.addIntersectionInclusion(RN['reviewer'], IIExpression(PR['RecSys'], RN['expert
 # Alice.recommendationFrom ←− RecSys.expert
 d.addSimpleInclusion(RN['recommendationFrom'], SIExpression(PR['RecSys'], RN['expert']), 100, {'from': PR['Alice']})
 
-
 print("Done")
 
 # ----------------------------------------------------- 
@@ -136,29 +139,38 @@ print("Done")
 print("\nSearching... ", end='')
 solutions = d.search(SIExpression(PR['Alice'], RN['recommendationFrom']))
 print(f"Found solutions: {len(solutions)}")
+filename = "testScenarioCnEligibles"+str(nEligibles)+".csv"
+if os.path.exists(filename):
+    append_write = 'a' # append if already exists
+else:
+    append_write = 'w' # make a new file if not
+with open(filename,append_write) as f1:
+    writer=csv.writer(f1,delimiter=' ', lineterminator='\n')
+    row=[]
+    # Per ciascun membro trovato, costruiscine la dimostrazione per il metodo di verifica on-chain sulla base dei paths nelle soluzioni
+    for idx, currSol in enumerate(solutions.values()):
+        print(f'\nSolution #{idx+1}: member={INV_PR[currSol.member]}, weight={currSol.weight}')
+        proofStrs = []
+        proof = []
+        for currEdge in currSol.path:
+            if not isinstance(currEdge.toNode.expr, LIExpression):
+                proofStrs.append(expr2str(currEdge.toNode.expr) + ' ←- ' + expr2str(currEdge.fromNode.expr))
+                proof.append(currEdge.toNode.expr.id)
+                proof.append(currEdge.fromNode.expr.id)
 
-# Per ciascun membro trovato, costruiscine la dimostrazione per il metodo di verifica on-chain sulla base dei paths nelle soluzioni
-for idx, currSol in enumerate(solutions.values()):
-    print(f'\nSolution #{idx+1}: member={INV_PR[currSol.member]}, weight={currSol.weight}')
-    proofStrs = []
-    proof = []
-    for currEdge in currSol.path:
-        if not isinstance(currEdge.toNode.expr, LIExpression):
-            proofStrs.append(expr2str(currEdge.toNode.expr) + ' ←- ' + expr2str(currEdge.fromNode.expr))
-            proof.append(currEdge.toNode.expr.id)
-            proof.append(currEdge.fromNode.expr.id)
+        # Verifica la dimostrazione on-chain
+        print('On-chain verification proof:')
+        pprint(proofStrs)
 
-    # Verifica la dimostrazione on-chain
-    print('On-chain verification proof:')
-    pprint(proofStrs)
-
-    verifGas = d.contract.functions.verifyProof(proof, currSol.reqStackSize).estimateGas()
-    verifRes = d.verifyProof(proof, currSol.reqStackSize)
-    if verifRes['principal'] != PR['Alice'] or verifRes['rolename'] != RN['recommendationFrom'] or verifRes['member'] != currSol.member:
-        print("ERROR: invalid proof for current solution!")
-    else:
-        verifRes['principal'] = INV_PR[verifRes['principal']]
-        verifRes['rolename'] = INV_RN[verifRes['rolename']]
-        verifRes['member'] = INV_PR[verifRes['member']]
-    print(f'On-chain verification gas: {verifGas}')
-    print(f'On-chain verification result: {verifRes}')
+        verifGas = d.contract.functions.verifyProof(proof, currSol.reqStackSize).estimateGas()
+        verifRes = d.verifyProof(proof, currSol.reqStackSize)
+        if verifRes['principal'] != PR['Alice'] or verifRes['rolename'] != RN['recommendationFrom'] or verifRes['member'] != currSol.member:
+            print("ERROR: invalid proof for current solution!")
+        else:
+            verifRes['principal'] = INV_PR[verifRes['principal']]
+            verifRes['rolename'] = INV_RN[verifRes['rolename']]
+            verifRes['member'] = INV_PR[verifRes['member']]
+        print(f'On-chain verification gas: {verifGas}')
+        row.append(verifGas)
+        print(f'On-chain verification result: {verifRes}')
+    writer.writerow(row)

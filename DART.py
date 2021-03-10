@@ -2,6 +2,7 @@ import json
 from web3 import Web3
 from hexbytes import HexBytes
 from collections import deque
+from pprint import pprint
 
 NULL_PRINCIPAL = "0x0000000000000000000000000000000000000000"
 NULL_ROLENAME = "0x0000"
@@ -390,7 +391,9 @@ class DART:
         """
         self.contract.functions.newRole(roleName).call(tx)
         txHash = self.contract.functions.newRole(roleName).transact(tx)
-        self.w3.eth.waitForTransactionReceipt(txHash)
+        receipt=self.w3.eth.waitForTransactionReceipt(txHash)
+        print("newRole mined:")
+        pprint(dict(receipt))
 
     def addSimpleMember(self, assignedRolename, expression, weight, tx={}):
         """
@@ -403,7 +406,9 @@ class DART:
         """
         self.contract.functions.addSimpleMember(assignedRolename, *expression, weight).call(tx)
         txHash = self.contract.functions.addSimpleMember(assignedRolename, *expression, weight).transact(tx)
-        self.w3.eth.waitForTransactionReceipt(txHash)
+        receipt=self.w3.eth.waitForTransactionReceipt(txHash)
+        print("addSimpleMember mined:")
+        pprint(dict(receipt))
 
     def addSimpleInclusion(self, assignedRolename, expression, weight, tx={}):
         """
@@ -416,7 +421,9 @@ class DART:
         """
         self.contract.functions.addSimpleInclusion(assignedRolename, *expression, weight).call(tx)
         txHash = self.contract.functions.addSimpleInclusion(assignedRolename, *expression, weight).transact(tx)
-        self.w3.eth.waitForTransactionReceipt(txHash)
+        receipt = self.w3.eth.waitForTransactionReceipt(txHash)
+        print("addSimpleInclusion mined:")
+        pprint(dict(receipt))
 
     def addLinkedInclusion(self, assignedRolename, expression, weight, tx={}):
         """
@@ -429,7 +436,9 @@ class DART:
         """
         self.contract.functions.addLinkedInclusion(assignedRolename, *expression, weight).call(tx)
         txHash = self.contract.functions.addLinkedInclusion(assignedRolename, *expression, weight).transact(tx)
-        self.w3.eth.waitForTransactionReceipt(txHash)
+        receipt =self.w3.eth.waitForTransactionReceipt(txHash)
+        print("addLinkedInclusion mined:")
+        pprint(dict(receipt))
 
     def addIntersectionInclusion(self, assignedRolename, expression, weight, tx={}):
         """
@@ -442,7 +451,9 @@ class DART:
         """
         self.contract.functions.addIntersectionInclusion(assignedRolename, *expression, weight).call(tx)
         txHash = self.contract.functions.addIntersectionInclusion(assignedRolename, *expression, weight).transact(tx)
-        self.w3.eth.waitForTransactionReceipt(txHash)
+        receipt = self.w3.eth.waitForTransactionReceipt(txHash)
+        print("addIntersectionInclusion mined:")
+        pprint(dict(receipt))
 
     # --------------------------------------------------------------------------------
     # TODO: operazioni di rimozione di credenziali ed aggiornamento dei valori di fiducia
