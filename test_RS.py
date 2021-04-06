@@ -1,4 +1,6 @@
 import argparse
+from math import gamma
+
 from DART import *
 from pprint import pprint
 import csv
@@ -97,43 +99,66 @@ def expr2str(expr):
 
 # ----------------------------------------------------- 
 
+operations = {'newRole':[],'simpleMember':[],'simpleInclusion':[],'linkedInclusion':[],'intersectionInclusion':[]}
+
 # Registra ruoli e credenziali per istanziare la policy di test EPapers
 print("Loading policy... ", end='')
 
-d.newRole(RN['recommendationFrom'], {'from': PR['Alice']})
-d.newRole(RN['reviewer'], {'from': PR['RecSys']})
-d.newRole(RN['expert'], {'from': PR['RecSys']})
-d.newRole(RN['buyer'], {'from': PR['RecSys']})
-d.newRole(RN['university'], {'from': PR['RecSys']})
-d.newRole(RN['professor'], {'from': PR['RecSys']})
-d.newRole(RN['university'], {'from': PR['StateA']})
-
+gasUsed=d.newRole(RN['recommendationFrom'], {'from': PR['Alice']})
+operations['newRole'].append(gasUsed)
+gasUsed=d.newRole(RN['reviewer'], {'from': PR['RecSys']})
+operations['newRole'].append(gasUsed)
+gasUsed=d.newRole(RN['expert'], {'from': PR['RecSys']})
+operations['newRole'].append(gasUsed)
+gasUsed=d.newRole(RN['buyer'], {'from': PR['RecSys']})
+operations['newRole'].append(gasUsed)
+gasUsed=d.newRole(RN['university'], {'from': PR['RecSys']})
+operations['newRole'].append(gasUsed)
+gasUsed=d.newRole(RN['professor'], {'from': PR['RecSys']})
+operations['newRole'].append(gasUsed)
+gasUsed=d.newRole(RN['university'], {'from': PR['StateA']})
+operations['newRole'].append(gasUsed)
 
 print(addressesOfUniversities)
 for uniAddr in addressesOfUniversities:
-    d.newRole(RN['professor'], {'from': uniAddr})
+    gasUsed = d.newRole(RN['professor'], {'from': uniAddr})
+    operations['newRole'].append(gasUsed)
 
 for idx, principalAddr in enumerate(addressesOfEligiblesExpert):
     # Registra il principal come professore di una delle università
-    d.addSimpleMember(RN['professor'], SMExpression(principalAddr), 100, {'from': addressesOfUniversities[idx % len(addressesOfUniversities)]})
+    gasUsed = d.addSimpleMember(RN['professor'], SMExpression(principalAddr), 100, {'from': addressesOfUniversities[idx % len(addressesOfUniversities)]})
+    operations['simpleMember'].append(gasUsed)
 for idx, principalAddr in enumerate(addressesOfEligiblesBuyer):
     # Registra buyer a RecSys
-    d.addSimpleMember(RN['buyer'], SMExpression(principalAddr), 100, {'from': PR['RecSys']})
+    gasUsed = d.addSimpleMember(RN['buyer'], SMExpression(principalAddr), 100, {'from': PR['RecSys']})
+    operations['simpleMember'].append(gasUsed)
 for uniAddr in addressesOfUniversities:
     # StateA.university ←− Uni_X
-    d.addSimpleMember(RN['university'], SMExpression(uniAddr), 100, {'from': PR['StateA']})
+    gasUsed = d.addSimpleMember(RN['university'], SMExpression(uniAddr), 100, {'from': PR['StateA']})
+    operations['simpleMember'].append(gasUsed)
 # RecSys.university ←− StateA.university
-d.addSimpleInclusion(RN['university'], SIExpression(PR['StateA'], RN['university']), 100, {'from': PR['RecSys']})
+gasUsed = d.addSimpleInclusion(RN['university'], SIExpression(PR['StateA'], RN['university']), 100, {'from': PR['RecSys']})
+operations['simpleInclusion'].append(gasUsed)
 # RecSys.expert ←− RecSys.university.professor
-d.addLinkedInclusion(RN['expert'], LIExpression(PR['RecSys'], RN['university'], RN['professor']), 100, {'from': PR['RecSys']})
+gasUsed = d.addLinkedInclusion(RN['expert'], LIExpression(PR['RecSys'], RN['university'], RN['professor']), 100, {'from': PR['RecSys']})
+operations['linkedInclusion'].append(gasUsed)
 # RecSys.reviewer ←− RecSys.expert e RecSys.buyer
-d.addIntersectionInclusion(RN['reviewer'], IIExpression(PR['RecSys'], RN['expert'], PR['RecSys'], RN['buyer']), 50, {'from': PR['RecSys']})
+gasUsed = d.addIntersectionInclusion(RN['reviewer'], IIExpression(PR['RecSys'], RN['expert'], PR['RecSys'], RN['buyer']), 50, {'from': PR['RecSys']})
+operations['intersectionInclusion'].append(gasUsed)
 # Alice.recommendationFrom ←− RecSys.expert
-d.addSimpleInclusion(RN['recommendationFrom'], SIExpression(PR['RecSys'], RN['expert']), 100, {'from': PR['Alice']})
-
+gasUsed = d.addSimpleInclusion(RN['recommendationFrom'], SIExpression(PR['RecSys'], RN['expert']), 100, {'from': PR['Alice']})
+operations['simpleInclusion'].append(gasUsed)
 print("Done")
 
-# ----------------------------------------------------- 
+# -----------------------------------------------------
+filename = "testScenarioCn"+str(nEligibles)+"uni"+str(nUniversities)+".csv"
+with open(filename,'w') as fop:
+    writer=csv.writer(fop,delimiter=' ', lineterminator='\n')
+    for key, vals in operations.items():
+        row = []
+        row.append(key)
+        row.extend(vals)
+        writer.writerow(row)
 
 # Effettua una ricerca locale di tutti i membri a cui risulta assegnato il ruolo EPapers.canAccess
 print("\nSearching... ", end='')

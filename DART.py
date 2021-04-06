@@ -394,6 +394,7 @@ class DART:
         receipt=self.w3.eth.waitForTransactionReceipt(txHash)
         print("newRole mined:")
         pprint(dict(receipt))
+        return receipt['gasUsed']
 
     def addSimpleMember(self, assignedRolename, expression, weight, tx={}):
         """
@@ -409,6 +410,7 @@ class DART:
         receipt=self.w3.eth.waitForTransactionReceipt(txHash)
         print("addSimpleMember mined:")
         pprint(dict(receipt))
+        return receipt['gasUsed']
 
     def addSimpleInclusion(self, assignedRolename, expression, weight, tx={}):
         """
@@ -424,6 +426,7 @@ class DART:
         receipt = self.w3.eth.waitForTransactionReceipt(txHash)
         print("addSimpleInclusion mined:")
         pprint(dict(receipt))
+        return receipt['gasUsed']
 
     def addLinkedInclusion(self, assignedRolename, expression, weight, tx={}):
         """
@@ -439,6 +442,7 @@ class DART:
         receipt =self.w3.eth.waitForTransactionReceipt(txHash)
         print("addLinkedInclusion mined:")
         pprint(dict(receipt))
+        return receipt['gasUsed']
 
     def addIntersectionInclusion(self, assignedRolename, expression, weight, tx={}):
         """
@@ -454,6 +458,7 @@ class DART:
         receipt = self.w3.eth.waitForTransactionReceipt(txHash)
         print("addIntersectionInclusion mined:")
         pprint(dict(receipt))
+        return receipt['gasUsed']
 
     # --------------------------------------------------------------------------------
     # TODO: operazioni di rimozione di credenziali ed aggiornamento dei valori di fiducia
