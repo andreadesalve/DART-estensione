@@ -24,6 +24,7 @@ args = parser.parse_args()
 
 nEligibles = args.n_eligibles
 nUniversities = args.n_universities
+totGas=0
 
 # Inizializza web3 connettendolo al provider locale ganache
 w3 = Web3(Web3.HTTPProvider(args.host))
@@ -106,48 +107,62 @@ print("Loading policy... ", end='')
 
 gasUsed=d.newRole(RN['recommendationFrom'], {'from': PR['Alice']})
 operations['newRole'].append(gasUsed)
+totGas+=gasUsed
 gasUsed=d.newRole(RN['reviewer'], {'from': PR['RecSys']})
 operations['newRole'].append(gasUsed)
+totGas+=gasUsed
 gasUsed=d.newRole(RN['expert'], {'from': PR['RecSys']})
 operations['newRole'].append(gasUsed)
+totGas+=gasUsed
 gasUsed=d.newRole(RN['buyer'], {'from': PR['RecSys']})
 operations['newRole'].append(gasUsed)
+totGas+=gasUsed
 gasUsed=d.newRole(RN['university'], {'from': PR['RecSys']})
 operations['newRole'].append(gasUsed)
+totGas+=gasUsed
 gasUsed=d.newRole(RN['professor'], {'from': PR['RecSys']})
 operations['newRole'].append(gasUsed)
+totGas+=gasUsed
 gasUsed=d.newRole(RN['university'], {'from': PR['StateA']})
 operations['newRole'].append(gasUsed)
+totGas+=gasUsed
 
 print(addressesOfUniversities)
 for uniAddr in addressesOfUniversities:
     gasUsed = d.newRole(RN['professor'], {'from': uniAddr})
     operations['newRole'].append(gasUsed)
-
+    totGas += gasUsed
 for idx, principalAddr in enumerate(addressesOfEligiblesExpert):
     # Registra il principal come professore di una delle università
     gasUsed = d.addSimpleMember(RN['professor'], SMExpression(principalAddr), 100, {'from': addressesOfUniversities[idx % len(addressesOfUniversities)]})
     operations['simpleMember'].append(gasUsed)
+    totGas += gasUsed
 for idx, principalAddr in enumerate(addressesOfEligiblesBuyer):
     # Registra buyer a RecSys
     gasUsed = d.addSimpleMember(RN['buyer'], SMExpression(principalAddr), 100, {'from': PR['RecSys']})
     operations['simpleMember'].append(gasUsed)
+    totGas += gasUsed
 for uniAddr in addressesOfUniversities:
     # StateA.university ←− Uni_X
     gasUsed = d.addSimpleMember(RN['university'], SMExpression(uniAddr), 100, {'from': PR['StateA']})
     operations['simpleMember'].append(gasUsed)
+    totGas += gasUsed
 # RecSys.university ←− StateA.university
 gasUsed = d.addSimpleInclusion(RN['university'], SIExpression(PR['StateA'], RN['university']), 100, {'from': PR['RecSys']})
 operations['simpleInclusion'].append(gasUsed)
+totGas+=gasUsed
 # RecSys.expert ←− RecSys.university.professor
 gasUsed = d.addLinkedInclusion(RN['expert'], LIExpression(PR['RecSys'], RN['university'], RN['professor']), 100, {'from': PR['RecSys']})
 operations['linkedInclusion'].append(gasUsed)
+totGas+=gasUsed
 # RecSys.reviewer ←− RecSys.expert e RecSys.buyer
 gasUsed = d.addIntersectionInclusion(RN['reviewer'], IIExpression(PR['RecSys'], RN['expert'], PR['RecSys'], RN['buyer']), 50, {'from': PR['RecSys']})
 operations['intersectionInclusion'].append(gasUsed)
+totGas+=gasUsed
 # Alice.recommendationFrom ←− RecSys.expert
 gasUsed = d.addSimpleInclusion(RN['recommendationFrom'], SIExpression(PR['RecSys'], RN['expert']), 100, {'from': PR['Alice']})
 operations['simpleInclusion'].append(gasUsed)
+totGas+=gasUsed
 print("Done")
 
 # -----------------------------------------------------
@@ -159,6 +174,15 @@ with open(filename,'w') as fop:
         row.append(key)
         row.extend(vals)
         writer.writerow(row)
+
+filename = "testScenarioCnSUMEligibles"+str(nEligibles)+".csv"
+if os.path.exists(filename):
+    append_write = 'a' # append if already exists
+else:
+    append_write = 'w' # make a new file if not
+with open(filename,append_write) as fsum:
+    writer=csv.writer(fsum,delimiter=' ', lineterminator='\n')
+    writer.writerow([nUniversities,totGas])
 
 # Effettua una ricerca locale di tutti i membri a cui risulta assegnato il ruolo EPapers.canAccess
 print("\nSearching... ", end='')
